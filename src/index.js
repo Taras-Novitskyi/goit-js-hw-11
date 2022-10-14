@@ -1,81 +1,85 @@
 import './css/styles.css';
 import Notiflix from 'notiflix';
-import axios from 'axios';
+import fotoCardsTpl from './template/foto-card.hbs';
+import PictureApiServer from "./js/picturesApiServer";
+import LoadMoreBtn from './js/loadMoreBtn';
 
-
-const BASE_URL = 'https://pixabay.com/api/';
 
 const refs = {
   form: document.querySelector('#search-form'),
   gallery: document.querySelector('.gallery'),
 };
+
+const picturesApiServer = new PictureApiServer();
+const loadMoreBtn = new LoadMoreBtn('.load-more', true);
+
+loadMoreBtn.refs.button.addEventListener('click', fetchPictures);
 refs.form.addEventListener('submit', onSubmitForm);
 
 
 function onSubmitForm(e) {
-	e.preventDefault();
-	const searchResult = e.target.value.trim();
+  e.preventDefault();
+  clearGalleryContainer();
+  picturesApiServer.resetPage();
 
-	if (!searchResult) {
-		return refs.gallery.innerHTML = '';
+  picturesApiServer.query = e.currentTarget.searchQuery.value.trim();
+
+ 	if (picturesApiServer.query === '') {
+      Notiflix.Notify.info('Please enter your search query.');
+      loadMoreBtn.hide();
+      return
   }
-  fetchCountries(searchResult).then(renderCountryList).catch(onFetchError);
+  
+  fetchPictures();
+  loadMoreBtn.show();
 }
 
-function renderGalleryList(pictures) {
-//   let galleryList = '';
+function fetchPictures() {
+  loadMoreBtn.disable();
+  picturesApiServer
+    .fetchPicture()
+    .then((data) => {
+      renderGalleryList(data);
 
-  if (pictures.length > 10) {
-    Notiflix.Notify.info(
-      'Too many matches found. Please enter a more specific name.'
+      if (data.totalHits <= picturesApiServer.perPage) {
+        loadMoreBtn.hide();
+        return;
+      }
+
+      loadMoreBtn.enable();
+    })
+    .catch(onFetchError);
+}
+
+function renderGalleryList(data) {
+  const totalPages = Math.ceil(data.totalHits / picturesApiServer.perPage);
+  const currentPage = picturesApiServer.page - 2;
+
+  if (data.totalHits === 0) {
+    Notiflix.Notify.failure(
+      'Sorry, there are no images matching your search query. Please try again.'
     );
+    clearGalleryContainer();
+    loadMoreBtn.hide();
     return;
   }
 
-	return pictures.map(picture => {
-	 `<div class="photo-card">
-      <img src="" alt="" loading="lazy" />
-      <div class="info">
-        <p class="info-item">
-          <b>Likes</b>
-        </p>
-        <p class="info-item">
-          <b>Views</b>
-        </p>
-        <p class="info-item">
-          <b>Comments</b>
-        </p>
-        <p class="info-item">
-          <b>Downloads</b>
-        </p>
-      </div>
-    </div>`
-	}).join('');
+   if (totalPages === currentPage) {
+     Notiflix.Notify.info(
+       "We're sorry, but you've reached the end of search results."
+     );
+     loadMoreBtn.hide();
+     return;
+   }
+	
+	refs.gallery.insertAdjacentHTML('beforeend', fotoCardsTpl(data.hits));
 }
-
-
-function fetchPicture(id) {
-	axios.get(`${BASE_URL}/name/${id}`)
-  .then(res => {
-	  console.log(res.data);
-	  return res;
-  });
-
-//   return fetch(
-//     `${BASE_URL}/name/${id}?fields=name,capital,flags,population,languages`
-//   ).then(response => {
-//     if (response.ok) {
-//       return response.json();
-//     }
-//     throw new Error(response.status);
-//   });
-}
-
 
 function onFetchError(err) {
 	console.log(err);
-	Notiflix.Notify.failure(
-    'Sorry, there are no images matching your search query. Please try again.'
-  );
-	refs.gallery.innerHTML = '';
+	clearGalleryContainer();
+}
+
+function clearGalleryContainer() {
+  refs.gallery.innerHTML = '';
 }
