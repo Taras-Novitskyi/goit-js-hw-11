@@ -10,7 +10,7 @@ const refs = {
   gallery: document.querySelector('.gallery'),
 };
 
-new SimpleLightbox('.gallery a', {});
+const gallery = new SimpleLightbox('.gallery a', {});
 const picturesApiServer = new PictureApiServer();
 const loadMoreBtn = new LoadMoreBtn('.load-more', true);
 
@@ -42,6 +42,7 @@ async function addPicturesAndUpdateUI() {
     const data = await picturesApiServer.fetchPicture();
     renderGalleryList(data);
     picturesApiServer.increasePage();
+    gallery.refresh();
     
     if (data.totalHits <= picturesApiServer.perPage) {
       loadMoreBtn.hide();
