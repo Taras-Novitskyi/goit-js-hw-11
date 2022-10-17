@@ -7,10 +7,10 @@ export default class PictureApiServer {
   constructor() {
     this.searchQuery = '',
 	this.page = 1,
-	this.perPage = 40
+	this.perPage = 42
   };
 
-	fetchPicture() {
+	async fetchPicture() {
 	  const options = {
       params: {
         q: `${this.searchQuery}`,
@@ -22,11 +22,8 @@ export default class PictureApiServer {
         per_page: `${this.perPage}`,
       },
     };
-    return axios.get(`${BASE_URL}`, options).then(({ data }) => {
-		this.page += 1;
-		// console.log(data);
-      return data;
-    });
+    const { data } = await axios.get(`${BASE_URL}`, options);
+    return data;
   }
 
   get query() {
@@ -37,6 +34,10 @@ export default class PictureApiServer {
     this.searchQuery = newQuery;
 	}
 	
+  increasePage() {
+    this.page += 1;
+  }
+  
 	resetPage() {
 		this.page = 1
 	}
