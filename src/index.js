@@ -4,16 +4,13 @@ import PictureApiServer from "./js/picturesApiServer";
 import LoadMoreBtn from './js/loadMoreBtn';
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
-import './css/styles.css';
-import './css/gallery.css';
-
-let gallery = new SimpleLightbox('.gallery a', {});
 
 const refs = {
   form: document.querySelector('#search-form'),
   gallery: document.querySelector('.gallery'),
 };
 
+new SimpleLightbox('.gallery a', {});
 const picturesApiServer = new PictureApiServer();
 const loadMoreBtn = new LoadMoreBtn('.load-more', true);
 
