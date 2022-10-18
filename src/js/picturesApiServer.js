@@ -7,7 +7,7 @@ export default class PictureApiServer {
   constructor() {
     this.searchQuery = '',
 	this.page = 1,
-	this.perPage = 42
+	this.perPage = 40
   };
 
 	async fetchPicture() {

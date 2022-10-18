@@ -8,11 +8,18 @@ import 'simplelightbox/dist/simple-lightbox.min.css';
 const refs = {
   form: document.querySelector('#search-form'),
   gallery: document.querySelector('.gallery'),
+  guard: document.querySelector('.load-more'),
+};
+const options = {
+  root: null,
+  rootMargin: '50px',
+  threshold: 1,
 };
 
 const gallery = new SimpleLightbox('.gallery a', {});
 const picturesApiServer = new PictureApiServer();
 const loadMoreBtn = new LoadMoreBtn('.load-more', true);
+const observer = new IntersectionObserver(onLastLoad, options);
 
 loadMoreBtn.refs.button.addEventListener('click', addPicturesAndUpdateUI);
 refs.form.addEventListener('submit', onSubmitForm);
@@ -38,12 +45,13 @@ function onSubmitForm(e) {
 async function addPicturesAndUpdateUI() {
   try {
     loadMoreBtn.disable();
-    
+    observer.unobserve(refs.guard);
+
     const data = await picturesApiServer.fetchPicture();
     renderGalleryList(data);
     picturesApiServer.increasePage();
     gallery.refresh();
-    
+
     if (data.totalHits <= picturesApiServer.perPage) {
       loadMoreBtn.hide();
       return;
@@ -68,20 +76,16 @@ function renderGalleryList(data) {
     return;
   }
 
-  if (totalPages < currentPage) {
-    loadMoreBtn.hide();
-    Notiflix.Notify.info(
-      "We're sorry, but you've reached the end of search results."
-    );
-    return;
-  }
-
   refs.gallery.insertAdjacentHTML('beforeend', fotoCardsTpl(data.hits));
 
     if (currentPage === 1) {
-      Notiflix.Notify.success(`Hooray! We found ${data.totalHits} images.`);
-    } else {
-      makeSmoothScroll();
+      return Notiflix.Notify.success(`Hooray! We found ${data.totalHits} images.`);
+    }
+    
+  makeSmoothScroll();
+    
+  if (currentPage === totalPages) {
+    observer.observe(refs.guard);
     }
 }
 
@@ -102,4 +106,17 @@ function makeSmoothScroll() {
       behavior: 'smooth',
     });
   
+}
+
+function onLastLoad(entries) {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+
+      Notiflix.Notify.info(
+        "We're sorry, but you've reached the end of search results."
+      );
+      
+      loadMoreBtn.hide();
+    }
+  });
 }
